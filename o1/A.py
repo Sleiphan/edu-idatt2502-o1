@@ -18,7 +18,7 @@ data_y = torch.tensor(data["weight"].values.tolist()).reshape(-1, 1)
 # data_y = torch.tensor([5.0, 3.5, 3.0, 4.0, 3.0, 1.5, 2.0]).reshape(-1, 1)
 
 model = LinearRegressionModel()
-optimizer = torch.optim.SGD([model.W, model.b], 0.00015)
+optimizer = torch.optim.adam([model.W, model.b], 0.00015)
 
 for epoch in range(1000):
     model.loss(data_x, data_y).backward()
