@@ -1,16 +1,38 @@
 import torch
 import matplotlib.pyplot as plt
+import pandas as pd
+from components.LinearRegressionModel import LinearRegressionModel
 
-# Plot 3 random points
-plt.plot(torch.rand(3), torch.rand(3), 'o')
+TRAINING_DATA_FILE_PATH = "o1/data/length_weight.csv"
 
-# Line plot of x * x
-# Create the vector [0., 0.01, ..., 0.99]
-x = torch.arange(start=0., end=1., step=0.01)
-# x * x is element-wise multiplication resulting in a vector with the same shape as x
-plt.plot(x, x * x, label="$x^2$")
+# First, read the header from the file
+headers = pd.read_csv(TRAINING_DATA_FILE_PATH, nrows=0).columns.tolist()
+# Then read the data, using the header to key the columns
+data = pd.read_csv(TRAINING_DATA_FILE_PATH, usecols=headers, sep=",")
 
-plt.xlabel('$x$')  # $$ activates LaTeX math notation
-plt.ylabel('$y$')
+# Convert each column of data to compatible tensors
+data_x = torch.tensor(data["length"].values.tolist()).reshape(-1, 1)
+data_y = torch.tensor(data["weight"].values.tolist()).reshape(-1, 1)
+
+# data_x = torch.tensor([1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0]).reshape(-1, 1)
+# data_y = torch.tensor([5.0, 3.5, 3.0, 4.0, 3.0, 1.5, 2.0]).reshape(-1, 1)
+
+model = LinearRegressionModel()
+optimizer = torch.optim.SGD([model.W, model.b], 0.00015)
+
+for epoch in range(1000):
+    model.loss(data_x, data_y).backward()
+    optimizer.step()
+    optimizer.zero_grad()
+
+print("W:    %f\nb:    %f\nloss: %f" %
+      (model.W, model.b, model.loss(data_x, data_y)))
+
+# Visualize result
+plt.plot(data_x, data_y, 'o', label='$(x^{(i)},y^{(i)})$')
+plt.xlabel('x')
+plt.ylabel('y')
+x = torch.tensor([[torch.min(data_x)], [torch.max(data_x)]])
+plt.plot(x, model.predict(x).detach(), label='$f(x) = xW+b$')
 plt.legend()
 plt.show()
