@@ -37,8 +37,9 @@ plt.plot(data_x, data_y, 'o', label='$(x^{(i)},y^{(i)})$')
 plt.xlabel('x')
 plt.ylabel('y')
 x = torch.arange(start=-5,
-                 #  end=5, step=0.1).reshape(-1, 1)
-                 end=torch.max(data_x), step=0.1).reshape(-1, 1)
+                 end=torch.max(data_x),
+                 step=0.1
+                 ).reshape(-1, 1)
 plt.plot(x, model.predict(x).detach(), label='$f(x) = xW+b$')
 plt.legend()
 plt.show()
