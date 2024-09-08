@@ -1,27 +1,19 @@
 import torch
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
-# Load observations from the mnist dataset. The observations are divided into a training set and a test set
-mnist_train = torchvision.datasets.MNIST('./data', train=True, download=True)
-x_train = mnist_train.data.reshape(-1, 784).float()  # Reshape input
-# Create output tensor
-y_train = torch.zeros((mnist_train.targets.shape[0], 10))
-y_train[torch.arange(mnist_train.targets.shape[0]),
-        mnist_train.targets] = 1  # Populate output
+TRAINING_DATA_FILE_PATH = "o2/data/mnist_train.csv"
+TEST_DATA_FILE_PATH = "o2/data/mnist_test.csv"
 
-mnist_test = torchvision.datasets.MNIST('./data', train=False, download=True)
-x_test = mnist_test.data.reshape(-1, 784).float()  # Reshape input
-y_test = torch.zeros((mnist_test.targets.shape[0], 10))  # Create output tensor
-y_test[torch.arange(mnist_test.targets.shape[0]),
-       mnist_test.targets] = 1  # Populate output
+mnist_data_training = pd.read_csv(TRAINING_DATA_FILE_PATH, sep=",")
+mnist_data_test = pd.read_csv(TEST_DATA_FILE_PATH, sep=",", header=None)
 
-# Show the input of the first observation in the training set
-plt.imshow(x_train[0, :].reshape(28, 28))
+training_labels = mnist_data_training[0]
+training_images = mnist_data_training.loc[:, mnist_data_training.columns != 0]
 
-# Print the classification of the first observation in the training set
-print(y_train[0, :])
+test_labels = mnist_data_test[0]
+test_images = mnist_data_test.loc[:, mnist_data_test.columns != 0]
 
-# Save the input of the first observation in the training set
-plt.imsave('x_train_1.png', x_train[0, :].reshape(28, 28))
 
 plt.show()
