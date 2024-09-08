@@ -3,44 +3,49 @@ from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import time
 
 TRAINING_DATA_FILE_PATH = "o2/data/mnist_train.csv"
 TEST_DATA_FILE_PATH = "o2/data/mnist_test.csv"
 
-print("Loading training data... ", end="")
-mnist_data_training = pd.read_csv(
-    TRAINING_DATA_FILE_PATH, sep=",", header=None)
-print("DONE")
 
-print("Loading test data... ", end="")
-mnist_data_test = pd.read_csv(TEST_DATA_FILE_PATH, sep=",", header=None)
-print("DONE")
+def load_test_data(file_path: str):
+    print("Loading test data... ", end="")
+    mnist_data_test = pd.read_csv(file_path, sep=",", header=None)
+    print("DONE")
 
-print("Setup data structures... ", end="")
-training_labels = torch.tensor(
-    mnist_data_training[0].to_numpy())
-training_images = torch.tensor(
-    mnist_data_training.loc[:, mnist_data_training.columns != 0].to_numpy(), dtype=torch.float32)
+    print("Setup data structures... ", end="")
+    test_labels = torch.tensor(mnist_data_test[0].to_numpy())
+    test_images = torch.tensor(
+        mnist_data_test.loc[:, mnist_data_test.columns != 0].to_numpy(), dtype=torch.float32)
+    # Reshape the images to be 28x28
+    test_images = test_images.reshape(-1, 1, 28, 28)
+    # Create DataLoaders for batching
+    test_dataset = TensorDataset(test_images, test_labels)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+    print("DONE")
+    return test_loader
 
-test_labels = torch.tensor(mnist_data_test[0].to_numpy())
-test_images = torch.tensor(
-    mnist_data_test.loc[:, mnist_data_test.columns != 0].to_numpy(), dtype=torch.float32)
 
-# Reshape the images to be 28x28
-training_images = training_images.reshape(-1, 1, 28, 28)
-test_images = test_images.reshape(-1, 1, 28, 28)
+def load_training_data(file_path: str):
+    print("Loading training data... ", end="")
+    mnist_data_training = pd.read_csv(
+        file_path, sep=",", header=None)
+    print("DONE")
 
-# Create DataLoaders for batching
-train_dataset = TensorDataset(training_images, training_labels)
-test_dataset = TensorDataset(test_images, test_labels)
+    print("Setup training data structures... ", end="")
+    training_labels = torch.tensor(
+        mnist_data_training[0].to_numpy())
+    training_images = torch.tensor(
+        mnist_data_training.loc[:, mnist_data_training.columns != 0].to_numpy(), dtype=torch.float32)
+    training_images = training_images.reshape(-1, 1, 28, 28)
+    train_dataset = TensorDataset(training_images, training_labels)
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    print("DONE")
+    return train_loader
 
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-print("DONE")
 
 # Define a simple neural network model
-
-
 class MNISTModel(torch.nn.Module):
     def __init__(self):
         super(MNISTModel, self).__init__()
@@ -63,19 +68,18 @@ class MNISTModel(torch.nn.Module):
         return x
 
 
-# Initialize the model, loss function, and optimizer
-model = MNISTModel()
-# Cross-entropy loss for multi-class classification
-criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
 # Function to train the model
+def train(model, criterion, optimizer, num_epochs=5):
+    train_loader = load_training_data(TRAINING_DATA_FILE_PATH)
 
-
-def train(model, train_loader, criterion, optimizer, num_epochs=5):
-    print("Training model... ")
+    print("Training the model... ")
     model.train()  # Set the model to training mode
+
     for epoch in range(num_epochs):
+        print(
+            f"    Epoch [{epoch+1}/{num_epochs}] running... ", end="", flush=True)
+        start_time = time.time()
+
         running_loss = 0.0
         for images, labels in train_loader:
             optimizer.zero_grad()  # Zero out gradients
@@ -84,15 +88,18 @@ def train(model, train_loader, criterion, optimizer, num_epochs=5):
             loss.backward()  # Backward pass (compute gradients)
             optimizer.step()  # Update weights
             running_loss += loss.item()
+
         print(
-            f"    Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(train_loader):.4f}")
+            f"DONE({time.time() - start_time:.1f}s) Loss: {running_loss/len(train_loader):.5f}")
     print("DONE")
 
 # Function to test the model
 
 
-def test(model, test_loader):
-    print("Testing model... ")
+def test(model):
+    test_loader = load_training_data(TRAINING_DATA_FILE_PATH)
+
+    print("Testing the model... ")
     model.eval()  # Set the model to evaluation mode
     correct = 0
     total = 0
@@ -106,12 +113,28 @@ def test(model, test_loader):
     print("DONE")
 
 
-# Train and test the model
-train(model, train_loader, criterion, optimizer, num_epochs=5)
-test(model, test_loader)
+def create_model():
+    # Initialize the model, loss function, and optimizer
+    model = MNISTModel()
+    # Cross-entropy loss for multi-class classification
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    # Train and test the model
+    train(model, criterion, optimizer, num_epochs=5)
+    test(model)
 
-# Save the model (optional)
-print("Saving model... ", end="")
-torch.save(model.state_dict(), "mnist_model.pth")
-print("DONE")
-# model = torch.load("mnist_model.pth")
+    # Save the model (optional)
+    print("Saving model... ", end="", flush=True)
+    torch.save(model.state_dict(), "mnist_model.pth")
+    print("DONE")
+
+
+def test_saved_model():
+    model = MNISTModel()
+    # Load the model
+    model.load_state_dict(torch.load("mnist_model.pth", weights_only=True))
+    # Test the model
+    test(model)
+
+
+test_saved_model()
