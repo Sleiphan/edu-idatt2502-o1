@@ -2,7 +2,6 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 import time
 
 TRAINING_DATA_FILE_PATH = "o2/data/mnist_train.csv"
@@ -10,11 +9,11 @@ TEST_DATA_FILE_PATH = "o2/data/mnist_test.csv"
 
 
 def load_test_data(file_path: str):
-    print("Loading test data... ", end="")
+    print("Loading test data... ", end="", flush=True)
     mnist_data_test = pd.read_csv(file_path, sep=",", header=None)
     print("DONE")
 
-    print("Setup data structures... ", end="")
+    print("Setup data structures... ", end="", flush=True)
     test_labels = torch.tensor(mnist_data_test[0].to_numpy())
     test_images = torch.tensor(
         mnist_data_test.loc[:, mnist_data_test.columns != 0].to_numpy(), dtype=torch.float32)
@@ -28,12 +27,12 @@ def load_test_data(file_path: str):
 
 
 def load_training_data(file_path: str):
-    print("Loading training data... ", end="")
+    print("Loading training data... ", end="", flush=True)
     mnist_data_training = pd.read_csv(
         file_path, sep=",", header=None)
     print("DONE")
 
-    print("Setup training data structures... ", end="")
+    print("Setup training data structures... ", end="", flush=True)
     training_labels = torch.tensor(
         mnist_data_training[0].to_numpy())
     training_images = torch.tensor(
@@ -137,4 +136,52 @@ def test_saved_model():
     test(model)
 
 
-test_saved_model()
+def generate_weight_images():
+    model = MNISTModel()
+    # Load the model
+    model.load_state_dict(torch.load("mnist_model.pth", weights_only=True))
+
+    # Set the model to evaluation mode
+    model.eval()
+
+    # Create a random image tensor with gradients enabled
+    input_image = torch.randn(1, 1, 28, 28, requires_grad=True)
+
+    # Define the optimizer
+    optimizer = torch.optim.Adam([input_image], lr=0.1)
+
+    # Define the target class (e.g., class 0 for digit 0)
+    target_class = 3
+
+    # Optimization loop
+    num_steps = 100
+    for step in range(num_steps):
+        optimizer.zero_grad()
+
+        # Forward pass
+        output = model(input_image)
+
+        # Compute loss (negative of the output for the target class)
+        loss = -output[0, target_class]
+
+        # Backward pass
+        loss.backward()
+
+        # Update the image
+        optimizer.step()
+
+        # Clip the image values to be between 0 and 1
+        with torch.no_grad():
+            input_image.clamp_(0, 1)
+
+    # Convert to numpy for visualization
+    generated_image = input_image.detach().cpu().numpy().squeeze()
+
+    # Plot the generated image
+    plt.imshow(generated_image, cmap='gray')
+    plt.title(f'Generated Image for Class {target_class}')
+    plt.axis('off')
+    plt.show()
+
+
+generate_weight_images()
