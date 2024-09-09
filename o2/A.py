@@ -1,6 +1,6 @@
 import torch
 import matplotlib.pyplot as plt
-from components.OperatorModels import NotModel, SigmoidModel
+from components.OperatorModels import SigmoidModel
 
 # model = NotModel()
 model = SigmoidModel(
