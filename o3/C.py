@@ -39,14 +39,21 @@ class ConvolutionalNeuralNetworkModel(nn.Module):
         self.pool_1 = nn.MaxPool2d(kernel_size=2)
         self.conv_2 = nn.Conv2d(32, 64, kernel_size=5, padding=2)
         self.pool_2 = nn.MaxPool2d(kernel_size=2)
-        self.dense = nn.Linear(64 * 7 * 7, 10)
+        self.dense_1 = nn.Linear(64 * 7 * 7, 1024)
+        self.dense_2 = nn.Linear(1024, 10)
+        self.relu = nn.ReLU()
 
     def logits(self, x):
         x = self.conv_1(x)
+        x = self.relu(x)
         x = self.pool_1(x)
         x = self.conv_2(x)
+        x = self.relu(x)
         x = self.pool_2(x)
-        return self.dense(x.reshape(-1, 64 * 7 * 7))
+        x = self.dense_1(x.reshape(-1, 64 * 7 * 7))
+        x = self.relu(x)
+        x = self.dense_2(x)
+        return x
 
     # Predictor
     def f(self, x):
@@ -74,4 +81,4 @@ for epoch in range(20):
 
     print("accuracy = %s" % model.accuracy(x_test, y_test))
 
-# Highest accuracy: 0.9867
+# Highest accuracy: 0.9894
