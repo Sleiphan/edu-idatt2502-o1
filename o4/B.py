@@ -7,25 +7,29 @@ class LongShortTermMemoryModel(nn.Module):
     def __init__(self, in_size, out_size):
         super(LongShortTermMemoryModel, self).__init__()
 
-        self.lstm = nn.LSTM(in_size, 128)  # 128 is the state size
-        self.dense = nn.Linear(128, out_size)  # 128 is the state size
+        self.state_size = 128
+        self.lstm = nn.LSTM(in_size, self.state_size)  # 128 is the state size
+        # 128 is the state size
+        self.dense = nn.Linear(self.state_size, out_size)
 
     def reset(self):  # Reset states prior to new input sequence
         # Shape: (number of layers, batch size, state size)
-        zero_state = torch.zeros(1, 1, 128)
+        zero_state = torch.zeros(1, 7, self.state_size)
         self.hidden_state = zero_state
         self.cell_state = zero_state
 
     def logits(self, x):  # x shape: (sequence length, batch size, encoding size)
         out, (self.hidden_state, self.cell_state) = self.lstm(
             x, (self.hidden_state, self.cell_state))
-        return self.dense(out.reshape(-1, 128))
+        return self.dense(out.reshape(-1, self.state_size))
 
     def f(self, x):  # x shape: (sequence length, batch size, encoding size)
         return torch.softmax(self.logits(x), dim=1)
 
     def loss(self, x, y):  # x shape: (sequence length, batch size, encoding size), y shape: (sequence length, encoding size)
-        return nn.functional.cross_entropy(self.logits(x), y.argmax(1))
+        calculated_logits = self.logits(x)
+        calced_argmax = y.argmax(1)
+        return nn.functional.cross_entropy(calculated_logits, calced_argmax)
 
 
 # char_encodings = [
@@ -39,7 +43,7 @@ class LongShortTermMemoryModel(nn.Module):
 #     [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1.],  # 'son'  at 6
 # ]
 char_encodings = [
-    # h   a   t   r   c   f   l   m   p   s   o   n
+    # h   a   t   r   c   f   l   m   p   s   o   n  \0
     [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],  # 'h' at  0
     [0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],  # 'a' at  1
     [0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],  # 't' at  2
@@ -77,26 +81,32 @@ index_to_emoji = [
     'son',  # at 6
 ]
 
-x_train = torch.tensor([[char_encodings[0], char_encodings[1], char_encodings[2], char_encodings[12]],
-                        [char_encodings[3], char_encodings[1],
-                            char_encodings[2], char_encodings[12]],
-                        [char_encodings[4], char_encodings[1],
-                            char_encodings[2], char_encodings[12]],
-                        [char_encodings[5], char_encodings[6],
-                            char_encodings[1], char_encodings[2]],
-                        [char_encodings[7], char_encodings[1],
-                            char_encodings[2], char_encodings[2]],
-                        [char_encodings[4], char_encodings[1],
-                            char_encodings[8], char_encodings[12]],
-                        [char_encodings[9], char_encodings[10], char_encodings[11], char_encodings[12]]])
+x_train_hat = torch.tensor([[char_encodings[0]], [char_encodings[1]],  [
+                           char_encodings[2]],  [char_encodings[12]]])
+x_train_rat = torch.tensor([[char_encodings[3]], [char_encodings[1]],  [
+                           char_encodings[2]],  [char_encodings[12]]])
+x_train_cat = torch.tensor([[char_encodings[4]], [char_encodings[1]],  [
+                           char_encodings[2]],  [char_encodings[12]]])
+x_train_flat = torch.tensor([[char_encodings[5]], [char_encodings[6]],  [
+                            char_encodings[1]],  [char_encodings[2]]])
+x_train_matt = torch.tensor([[char_encodings[7]], [char_encodings[1]],  [
+                            char_encodings[2]],  [char_encodings[2]]])
+x_train_cap = torch.tensor([[char_encodings[4]], [char_encodings[1]],  [
+                           char_encodings[8]],  [char_encodings[12]]])
+x_train_son = torch.tensor([[char_encodings[9]], [char_encodings[10]], [
+                           char_encodings[11]], [char_encodings[12]]])
 
-y_train = torch.tensor([emoji_encodings[0],
-                        emoji_encodings[1],
-                        emoji_encodings[2],
-                        emoji_encodings[3],
-                        emoji_encodings[4],
-                        emoji_encodings[5],
-                        emoji_encodings[6]])
+x_train = torch.cat((x_train_hat,
+                     x_train_rat,
+                     x_train_cat,
+                     x_train_flat,
+                     x_train_matt,
+                     x_train_cap,
+                     x_train_son
+                     ),
+                    dim=1)
+
+y_train = torch.tensor(emoji_encodings)
 
 model = LongShortTermMemoryModel(char_encoding_size, emoji_encoding_size)
 
