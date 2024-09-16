@@ -29,21 +29,31 @@ class LongShortTermMemoryModel(nn.Module):
 
 
 char_encodings = [
-    [1., 0., 0., 0., 0.],  # ' '
-    [0., 1., 0., 0., 0.],  # 'h'
-    [0., 0., 1., 0., 0.],  # 'e'
-    [0., 0., 0., 1., 0.],  # 'l'
-    [0., 0., 0., 0., 1.],  # 'o'
+    [1., 0., 0., 0., 0., 0., 0., 0.],  # ' ' at 0
+    [0., 1., 0., 0., 0., 0., 0., 0.],  # 'h' at 1
+    [0., 0., 1., 0., 0., 0., 0., 0.],  # 'e' at 2
+    [0., 0., 0., 1., 0., 0., 0., 0.],  # 'l' at 3
+    [0., 0., 0., 0., 1., 0., 0., 0.],  # 'o' at 4
+    [0., 0., 0., 0., 0., 1., 0., 0.],  # 'w' at 5
+    [0., 0., 0., 0., 0., 0., 1., 0.],  # 'r' at 6
+    [0., 0., 0., 0., 0., 0., 0., 1.],  # 'd' at 7
 ]
 encoding_size = len(char_encodings)
 
-index_to_char = [' ', 'h', 'e', 'l', 'o']
+index_to_char = [' ', 'h', 'e', 'l', 'o', 'w', 'r', 'd']
 
-x_train = torch.tensor([[char_encodings[0]], [char_encodings[1]], [char_encodings[2]], [char_encodings[3]], [char_encodings[3]],
-                        [char_encodings[4]]])  # ' hello'
-y_train = torch.tensor([char_encodings[1], char_encodings[2], char_encodings[3],
-                       # 'hello '
-                        char_encodings[3], char_encodings[4], char_encodings[0]])
+x_train = torch.tensor([[char_encodings[0]],
+                        # ' hello world'
+                        [char_encodings[1]], [char_encodings[2]], [char_encodings[3]], [
+                            char_encodings[3]], [char_encodings[4]],
+                        [char_encodings[0]],
+                        [char_encodings[5]], [char_encodings[4]], [char_encodings[6]], [char_encodings[3]], [char_encodings[7]]])
+
+y_train = torch.tensor([char_encodings[1], char_encodings[2], char_encodings[3], char_encodings[3], char_encodings[4],
+                        # 'hello world '
+                        char_encodings[0],
+                        char_encodings[5], char_encodings[4], char_encodings[6], char_encodings[3], char_encodings[7],
+                        char_encodings[0]])
 
 model = LongShortTermMemoryModel(encoding_size)
 
