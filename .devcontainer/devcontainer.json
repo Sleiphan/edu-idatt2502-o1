@@ -3,11 +3,13 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-	"postStartCommand": "chmod +x ./.devcontainer/post-install.sh && ./.devcontainer/post-install.sh",
+	"postCreateCommand": "chmod +x .devcontainer/*.sh && .devcontainer/post-create.sh",
+	"postAttachCommand": ".devcontainer/post-attach.sh",
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"mechatroner.rainbow-csv"
+				"mechatroner.rainbow-csv",
+				"ms-toolsai.jupyter"
 			]
 		}
 	}
